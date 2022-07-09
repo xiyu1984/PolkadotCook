@@ -3,4 +3,5 @@
 members = [
     "TCPServer",
     "TCPClient",
+    "lesson4",
 ]
