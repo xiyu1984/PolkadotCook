@@ -2,6 +2,12 @@
 
 pub use pallet::*;
 
+#[cfg(test)]
+mod mock;
+
+#[cfg(test)]
+mod tests;
+
 #[frame_support::pallet]
 pub mod pallet {    
 	use frame_support::pallet_prelude::*;
@@ -122,11 +128,11 @@ pub mod pallet {
 }
 
 
-#[cfg(test)]
-mod tests {
-	#[test]
-	fn it_works() {
-		let result = 2 + 2;
-		assert_eq!(result, 4);
-	}
-}
+// #[cfg(test)]
+// mod tests {
+// 	#[test]
+// 	fn it_works() {
+// 		let result = 2 + 2;
+// 		assert_eq!(result, 4);
+// 	}
+// }
