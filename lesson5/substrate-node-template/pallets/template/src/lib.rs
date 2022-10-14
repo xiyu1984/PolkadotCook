@@ -120,16 +120,14 @@ pub mod pallet {
 		/// An example dispatchable that takes a singles value as a parameter, writes the value to
 		/// storage and emits an event. This function must be dispatched by a signed extrinsic.
 		#[pallet::weight(10_000 + T::DbWeight::get().writes(1))]
-		pub fn write_offchain_storage(origin: OriginFor<T>, key_index: u32, something: u64) -> DispatchResult {
+		pub fn write_offchain(origin: OriginFor<T>, key_index: u32, something: u64, titile: Vec<u8>) -> DispatchResult {
 			// Check that the extrinsic was signed and get the signer.
 			// This function will return an error if the extrinsic is not signed.
 			// https://docs.substrate.io/v3/runtime/origins
 
 			// let key = Self::derive_key(block_number);
 			let key = Self::derive_key(key_index.into());
-			let data = IndexingData(b"submit_number_signed".to_vec(), something);
-
-			Self::deposit_event(Event::Key(key.clone()));
+			let data = IndexingData(titile, something);
 
 			//  write or mutate tuple content to key
 			offchain_index::set(&key, &data.encode());
@@ -145,41 +143,20 @@ pub mod pallet {
         fn offchain_worker(block_number: T::BlockNumber) {
             log::info!("Hello World from offchain workers!: {:?}", block_number);
 
-			// if block_number % 2u32.into() != Zero::zero() {
-            //     // // odd
-            //     // let key = Self::derive_key(block_number);
-            //     // let val_ref = StorageValueRef::persistent(&key);
-                
-            //     // //  get a local random value 
-            //     // let random_slice = sp_io::offchain::random_seed();
-                
-            //     // //  get a local timestamp
-            //     // let timestamp_u64 = sp_io::offchain::timestamp().unix_millis();
+			let key = Self::derive_key(block_number - 1u32.into());
 
-            //     // // combine to a tuple and print it  
-            //     // let value = (random_slice, timestamp_u64);
-            //     // log::info!("in odd block, value to write: {:?}", value);
+			let mut val_ref = StorageValueRef::persistent(&key);
 
-            //     // //  write or mutate tuple content to key
-            //     // val_ref.set(&value);
-
-            // } else {
-                // even
-                let key = Self::derive_key(block_number - 1u32.into());
-
-                let mut val_ref = StorageValueRef::persistent(&key);
-
-                // get from db by key
-                if let Ok(Some(value)) = val_ref.get::<IndexingData>() {
-                    // print values
-                    log::info!("in even block, value read: {:?}, {:?}", key, value);
-                    // delete that key
-                    val_ref.clear();
-                }
-				else {
-					log::info!("No value to read");
-				}
-            // }
+			// get from db by key
+			if let Ok(Some(value)) = val_ref.get::<IndexingData>() {
+				// print values
+				log::info!("in even block, value read: {:?}, {:?}", key, value);
+				// delete that key
+				val_ref.clear();
+			}
+			else {
+				log::info!("No value to read");
+			}
 
             log::info!("Leave from offchain workers!: {:?}", block_number);
         }
