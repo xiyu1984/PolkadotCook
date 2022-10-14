@@ -19,6 +19,24 @@ pub mod pallet {
 	use frame_support::pallet_prelude::*;
 	use frame_system::pallet_prelude::*;
 
+	use frame_support::inherent::Vec;
+
+	use serde::{Deserialize};
+	use codec::{Decode, Encode};
+
+
+	use sp_runtime::{
+		offchain::{
+			storage::{StorageValueRef},
+		},
+		traits::Zero,
+	};
+
+	use sp_io::offchain_index;
+
+	#[derive(Debug, Deserialize, Encode, Decode, Default)]
+	struct IndexingData(Vec<u8>, u64);
+
 	/// Configure the pallet by specifying the parameters and types on which it depends.
 	#[pallet::config]
 	pub trait Config: frame_system::Config {
@@ -98,5 +116,98 @@ pub mod pallet {
 				},
 			}
 		}
+
+		/// An example dispatchable that takes a singles value as a parameter, writes the value to
+		/// storage and emits an event. This function must be dispatched by a signed extrinsic.
+		#[pallet::weight(10_000 + T::DbWeight::get().writes(1))]
+		pub fn write_offchain_storage(origin: OriginFor<T>, key_index: u32, something: u64) -> DispatchResult {
+			// Check that the extrinsic was signed and get the signer.
+			// This function will return an error if the extrinsic is not signed.
+			// https://docs.substrate.io/v3/runtime/origins
+
+			// let key = Self::derive_key(block_number);
+			let key = Self::derive_key(key_index.into());
+			let data = IndexingData(b"submit_number_signed".to_vec(), something);
+
+			Self::deposit_event(Event::Key(key.clone()));
+
+			//  write or mutate tuple content to key
+			offchain_index::set(&key, &data.encode());
+
+			// Return a successful DispatchResultWithPostInfo
+			Ok(())
+		}
 	}
+
+	#[pallet::hooks]
+    impl<T: Config> Hooks<BlockNumberFor<T>> for Pallet<T> {
+
+        fn offchain_worker(block_number: T::BlockNumber) {
+            log::info!("Hello World from offchain workers!: {:?}", block_number);
+
+			// if block_number % 2u32.into() != Zero::zero() {
+            //     // // odd
+            //     // let key = Self::derive_key(block_number);
+            //     // let val_ref = StorageValueRef::persistent(&key);
+                
+            //     // //  get a local random value 
+            //     // let random_slice = sp_io::offchain::random_seed();
+                
+            //     // //  get a local timestamp
+            //     // let timestamp_u64 = sp_io::offchain::timestamp().unix_millis();
+
+            //     // // combine to a tuple and print it  
+            //     // let value = (random_slice, timestamp_u64);
+            //     // log::info!("in odd block, value to write: {:?}", value);
+
+            //     // //  write or mutate tuple content to key
+            //     // val_ref.set(&value);
+
+            // } else {
+                // even
+                let key = Self::derive_key(block_number - 1u32.into());
+
+                let mut val_ref = StorageValueRef::persistent(&key);
+
+                // get from db by key
+                if let Ok(Some(value)) = val_ref.get::<IndexingData>() {
+                    // print values
+                    log::info!("in even block, value read: {:?}, {:?}", key, value);
+                    // delete that key
+                    val_ref.clear();
+                }
+				else {
+					log::info!("No value to read");
+				}
+            // }
+
+            log::info!("Leave from offchain workers!: {:?}", block_number);
+        }
+
+        fn on_initialize(_n: T::BlockNumber) -> Weight {
+            log::info!("in on_initialize!");
+            0
+        }
+
+        fn on_finalize(_n: T::BlockNumber) {
+            log::info!("in on_finalize!");
+        }
+
+        fn on_idle(_n: T::BlockNumber, _remaining_weight: Weight) -> Weight {
+            log::info!("in on_idle!");
+            0
+        }
+
+    }
+
+	impl<T: Config> Pallet<T> {
+
+        #[deny(clippy::clone_double_ref)]
+        fn derive_key(block_number: T::BlockNumber) -> Vec<u8> {
+            block_number.using_encoded(|encoded_bn| {
+                Vec::<u8>::from(encoded_bn)
+            })
+        }
+
+    }
 }
