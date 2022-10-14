@@ -1,4 +1,4 @@
-use crate as nika_pallet;
+use crate as pallet_template;
 use frame_support::parameter_types;
 use frame_system as system;
 use sp_core::H256;
@@ -18,14 +18,13 @@ frame_support::construct_runtime!(
 		UncheckedExtrinsic = UncheckedExtrinsic,
 	{
 		System: frame_system::{Pallet, Call, Config, Storage, Event<T>},
-		NikaModule: nika_pallet::{Pallet, Call, Storage, Event<T>},
+		TemplateModule: pallet_template::{Pallet, Call, Storage, Event<T>},
 	}
 );
 
 parameter_types! {
 	pub const BlockHashCount: u64 = 250;
 	pub const SS58Prefix: u8 = 42;
-	pub const MaxClaimLength: u8 = 8;
 }
 
 impl system::Config for Test {
@@ -54,10 +53,8 @@ impl system::Config for Test {
 	type OnSetCode = ();
 }
 
-impl nika_pallet::Config for Test {
+impl pallet_template::Config for Test {
 	type Event = Event;
-	type MaxClaimLength = MaxClaimLength;
-	// type WeightInfo = ();
 }
 
 // Build genesis storage according to the mock runtime.

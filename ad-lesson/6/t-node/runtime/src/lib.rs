@@ -42,8 +42,9 @@ pub use sp_runtime::{Perbill, Permill};
 
 /// Import the template pallet.
 pub use pallet_template;
-pub use nika_pallet;
-pub use star_kitties;
+
+/// Import the poe pallet.
+pub use pallet_poe;
 
 /// An index to a block.
 pub type BlockNumber = u32;
@@ -140,9 +141,6 @@ parameter_types! {
 	pub BlockLength: frame_system::limits::BlockLength = frame_system::limits::BlockLength
 		::max_with_normal_ratio(5 * 1024 * 1024, NORMAL_DISPATCH_RATIO);
 	pub const SS58Prefix: u8 = 42;
-	pub const ReserveBalance: u128 = 512;
-	pub const MaxKittyOwned: u32 = 65535;
-	pub const MaxClaimLength: u8 = 8;
 }
 
 // Configure FRAME pallets to include in runtime.
@@ -284,18 +282,15 @@ impl pallet_template::Config for Runtime {
 	type Event = Event;
 }
 
-impl nika_pallet::Config for Runtime {
-	type Event = Event;
-	type MaxClaimLength = MaxClaimLength;
+parameter_types! {
+	pub const MaxClaimLength: u8 = 8;
 }
 
-impl star_kitties::Config for Runtime {
+/// Configure the pallet-poe in pallets/poe.
+impl pallet_poe::Config for Runtime {
 	type Event = Event;
-	type Randomness = RandomnessCollectiveFlip;
-	type Balances = Balances;
-	type KittyIndex = u32;
-	type MaxKittyOwned = MaxKittyOwned;
-	type ReserveBalance = ReserveBalance;
+	type MaxClaimLength = MaxClaimLength;
+	type WeightInfo = pallet_poe::weights::SubstrateWeight<Runtime>;
 }
 
 // Create the runtime by composing the FRAME pallets that were previously configured.
@@ -315,8 +310,7 @@ construct_runtime!(
 		Sudo: pallet_sudo,
 		// Include the custom logic from the pallet-template in the runtime.
 		TemplateModule: pallet_template,
-		NikaCertificate: nika_pallet,
-		KittyModule: star_kitties,
+		PoeModule: pallet_poe,
 	}
 );
 
@@ -496,7 +490,7 @@ impl_runtime_apis! {
 			list_benchmark!(list, extra, pallet_balances, Balances);
 			list_benchmark!(list, extra, pallet_timestamp, Timestamp);
 			list_benchmark!(list, extra, pallet_template, TemplateModule);
-			list_benchmark!(list, extra, nika_pallet, NikaCertificate);
+			list_benchmark!(list, extra, pallet_poe, PoeModule);
 
 			let storage_info = AllPalletsWithSystem::storage_info();
 
@@ -535,7 +529,7 @@ impl_runtime_apis! {
 			add_benchmark!(params, batches, pallet_balances, Balances);
 			add_benchmark!(params, batches, pallet_timestamp, Timestamp);
 			add_benchmark!(params, batches, pallet_template, TemplateModule);
-			add_benchmark!(params, batches, nika_pallet, NikaCertificate);
+			add_benchmark!(params, batches, pallet_poe, PoeModule);
 
 			Ok(batches)
 		}
